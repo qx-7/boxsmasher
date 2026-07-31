@@ -76,6 +76,9 @@ function game.init(data)
 
 	-- Iterate over terrain objects and create static colliders for them
 	for _, ter in pairs(lvl.terrain) do
+		-- Convert terrain object rotation angle from degrees to radians
+		ter.angle = (ter.angle or 0) * math.pi / 180
+
 		-- Box2D works with the center of mass (for rectangles they're in the middle of the rectangle),
 		-- but level definition works with rectangles with origin being top left. We need to convert these.
 		local dim = {
@@ -240,7 +243,7 @@ function game.draw()
 	-- getting the representation of a Box2D shape is weird, just do it ourself).
 	for _, ter in pairs(lvl.terrain) do
 		love.graphics.setColor(ter.colour)
-		love.graphics.rectangle('fill', ter.x, ter.y, ter.w, ter.h)
+		draw.rotatedRectangle('fill', (ter.x + ter.w/2), (ter.y + ter.h/2), ter.w, ter.h, ter.angle)
 	end
 
 	-- If holding down, show the throw vector.
