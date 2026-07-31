@@ -3,7 +3,7 @@ local o = 40
 
 return {
 	author = 'qx-7',
-	totalBalls = 10,
+	totalBalls = 3,
 	throwBoundary = {
 		x = o*4, y = o*5,
 		w = o*6, h = o*8,
