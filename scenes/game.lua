@@ -76,18 +76,36 @@ function game.init(data)
 
 	-- Iterate over terrain objects and create static colliders for them
 	for _, ter in pairs(lvl.terrain) do
-		-- Convert terrain object rotation angle from degrees to radians
-		ter.angle = (ter.angle or 0) * math.pi / 180
+		-- Convert terrain object rotation angle from degrees to radians (+ve CW)
+		ter.angle = math.rad((ter.angle or 0) % 180) -- modulo 180 because rectangle symmetry
 
-		-- Box2D works with the center of mass (for rectangles they're in the middle of the rectangle),
-		-- but level definition works with rectangles with origin being top left. We need to convert these.
-		local dim = {
-			ter.x+(ter.w/2),
-			ter.y+(ter.h/2),
-			ter.w, ter.h}
+		-- We need to calculate coordinates for each point on the rectangle.
+		-- Since only the top left corner and dimensions (and possibly angle of rotation) are given,
+		-- we need to do a little trigonometry to determine their rotated position.
+		local center = {
+			x = ter.x + (ter.w)/2,
+			y = ter.y + (ter.h)/2
+		}
+		-- Calculate angle of vector from center to each vertex (+ve CCW about x-axis, in radians)
+		-- defined counterclockwise starting from top right when ter.angle = 0
+		local vertexAngles = {
+			math.atan(ter.h/ter.w),
+			math.pi + math.atan(ter.h/-ter.w),
+			math.pi + math.atan(ter.h/ter.w),
+			math.atan(-ter.h/ter.w)
+			-- even works when ter.w = 0
+			-- Lua rocks
+		}
+		local vertexRadius = math.sqrt( ((ter.w*ter.w) + (ter.h*ter.h)) / 4 ) -- simplified
+		local vertices = { }
+		for i, vertexAngle in ipairs(vertexAngles) do
+			vertices[2*i-1] = center.x + (vertexRadius * math.cos(-ter.angle + vertexAngle))
+			vertices[2*i] = center.y - (vertexRadius * math.sin(-ter.angle + vertexAngle)) -- subtract because +ve y downward
+			-- using -ter.angle because we're given +ve CW angle measure, but trig expects +ve CCW
+		end
 
-		-- Make a static collider with the dimensions of the terrain object
-		local rect = world:newCollider("Rectangle", dim)
+		-- Make a static collider with the calculated vertices of the terrain object
+		local rect = world:newCollider("Polygon", vertices)
 		rect:setType("static")
 
 		ter.colour = { love.math.colorFromBytes(unpack(ter.colour or {125, 227, 102})) }
